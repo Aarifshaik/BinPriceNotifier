@@ -1,4 +1,29 @@
+const express = require('express');
 const axios = require('axios');
+const app = express();
+
+// Use process.env.PORT to dynamically set the port on Render or fallback to 3000 for local development
+const port = process.env.PORT || 3000; 
+
+app.use(express.json()); // to parse JSON bodies
+
+let Green = 500000;
+let Red = 10000;
+let Symbol = "BTCUSDT";
+
+app.post('/update-thresholds', (req, res) => {
+    const { green, red, symbol } = req.body;
+
+    if (green) Green = parseFloat(green);
+    if (red) Red = parseFloat(red);
+    if (symbol) Symbol = symbol;
+
+    console.log("Thresholds Updated Successfully");
+    console.log("Green  :" + Green);
+    console.log("Red  :" + Red);
+    console.log("Symbol :" + Symbol);
+    res.send({ message: 'Thresholds updated', Green, Red, Symbol });
+});
 
 async function getCoinPrice(symbol) {
     const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
@@ -37,32 +62,30 @@ async function sendPushNotification(expoPushToken, title, body) {
 }
 
 (async () => {
-    const symbol = 'XTZUSDT';
-    const expoPushToken = 'ExponentPushToken[l-W_SjC7wAhkccgjlM0wCe]'; // Replace with your Expo token
-    const sellThreshold = 1.178; // Price threshold for sell notification
-    const buyThreshold = 1;  // Example: Price threshold for buy notification
-    let price = await getCoinPrice(symbol);
+    const expoPushToken = 'ExponentPushToken[l-W_SjC7wAhkccgjlM0wCe]';
+
+    let price = await getCoinPrice(Symbol);
 
     if (price !== null) {
-        console.log(`Initial price of ${symbol} is ${price}`);
+        console.log(`Initial price of ${Symbol} is ${price}`);
     }
 
     setInterval(async () => {
         try {
-            price = await getCoinPrice(symbol);
+            price = await getCoinPrice(Symbol);
             if (price !== null) {
-                console.log(`The price of ${symbol} is ${price}`);
+                console.log(`The price of ${Symbol} is ${price}`);
 
-                if (price > sellThreshold) {
+                if (price < Green) {
                     await sendPushNotification(
                         expoPushToken,
-                        'Price near to sell',
+                        'Price near to Buy',
                         `Price dropped to ${price}`
                     );
-                } else if (price < buyThreshold) {
+                } else if (price > Red) {
                     await sendPushNotification(
                         expoPushToken,
-                        'Price near to buy',
+                        'Price near to Sell',
                         `Price rose to ${price}`
                     );
                 }
@@ -70,5 +93,9 @@ async function sendPushNotification(expoPushToken, title, body) {
         } catch (error) {
             console.error(`Error in price check loop: ${error.message}`);
         }
-    }, 1000);
+    }, 3000);
 })();
+
+app.listen(port, () => {
+    console.log(`App is running on port ${port}`);
+});
