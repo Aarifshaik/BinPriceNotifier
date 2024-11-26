@@ -7,22 +7,26 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json()); // to parse JSON bodies
 
-let Green = 500000;
-let Red = 10000;
+let TopBound = 50000;
+let LowBound = 10000;
+let Order ="Buy"
 let Symbol = "BTCUSDT";
 
 app.post('/update-thresholds', (req, res) => {
-    const { green, red, symbol } = req.body;
+    const { symbol,order,top,low } = req.body;
 
-    if (green) Green = parseFloat(green);
-    if (red) Red = parseFloat(red);
     if (symbol) Symbol = symbol;
+    if(order) Order = order;
+    if (top) TopBound = parseFloat(top);
+    if (low) LowBound = parseFloat(low);
+
 
     console.log("Thresholds Updated Successfully");
-    console.log("Green  :" + Green);
-    console.log("Red  :" + Red);
+    console.log("Order  :" + Order);
+    console.log("Top Bound  :" + TopBound);
+    console.log("Low Bound  :" + LowBound);
     console.log("Symbol :" + Symbol);
-    res.send({ message: 'Thresholds updated', Green, Red, Symbol });
+    res.send({ message: 'Thresholds updated', Order, TopBound, LowBound, Symbol });
 });
 
 async function getCoinPrice(symbol) {
@@ -75,19 +79,36 @@ async function sendPushNotification(expoPushToken, title, body) {
             price = await getCoinPrice(Symbol);
             if (price !== null) {
                 console.log(`The price of ${Symbol} is ${price}`);
+                if (Order =="Buy"){
+                    if (price > TopBound) {
+                        await sendPushNotification(
+                            expoPushToken,
+                            'Price near to Sell',
+                            `Price Rose to ${price} ....✅✅✅✅`
+                        );
+                    } else if (price < LowBound) {
+                        await sendPushNotification(
+                            expoPushToken,
+                            'Price near to Buy',
+                            `Price Dropped to ${price} ....❌❌❌`
+                        );
+                    }
+                }
 
-                if (price < Green) {
-                    await sendPushNotification(
-                        expoPushToken,
-                        'Price near to Buy',
-                        `Price dropped to ${price}`
-                    );
-                } else if (price > Red) {
-                    await sendPushNotification(
-                        expoPushToken,
-                        'Price near to Sell',
-                        `Price rose to ${price}`
-                    );
+                if (Order =="Sell"){
+                    if (price > TopBound) {
+                        await sendPushNotification(
+                            expoPushToken,
+                            'Price near to Buy',
+                            `Price Rose to ${price} ....❌❌❌`
+                        );
+                    } else if (price < LowBound) {
+                        await sendPushNotification(
+                            expoPushToken,
+                            'Price near to Sell',
+                            `Price Dropped to ${price} ....✅✅✅`
+                        );
+                    }
                 }
             }
         } catch (error) {
