@@ -7,10 +7,10 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json()); // to parse JSON bodies
 
-let TopBound = 50000;
-let LowBound = 10000;
-let Order ="Buy"
-let Symbol = "BTCUSDT";
+let TopBound = 3.65;
+let LowBound = 3.55;
+let Order ="Buy";
+let Symbol = "FTTUSDT";
 
 app.post('/update-thresholds', (req, res) => {
     const { symbol,order,top,low } = req.body;
@@ -114,7 +114,7 @@ async function sendPushNotification(expoPushToken, title, body) {
         } catch (error) {
             console.error(`Error in price check loop: ${error.message}`);
         }
-    }, 3000);
+    }, 2000);
 })();
 
 app.listen(port, () => {
